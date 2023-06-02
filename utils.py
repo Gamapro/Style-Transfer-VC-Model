@@ -15,13 +15,20 @@ class AudioDataset(Dataset):
     def __len__(self):
         return len(self.metadata)
 
-    def __getitem__(self, idx):
-        audio_file = self.metadata.iloc[idx]['path']
-        waveform, sample_rate = torchaudio.load(audio_file)
+    def to_waveform(self, audio_file):
+        waveform, _ = torchaudio.load(audio_file)
         waveform = waveform[0, :self.sample_rate * self.audio_length]
         waveform = waveform / torch.max(torch.abs(waveform))
         waveform = waveform.to(self.device)
         return waveform
+
+    def __getitem__(self, idx):
+        audio_file = self.metadata.iloc[idx]['path']
+        speech_waveform = self.to_waveform(audio_file)
+        random_idx = torch.randint(0, len(self.metadata), (1,)).item()
+        style_audio_file = self.metadata.iloc[random_idx]['path']
+        style_waveform = self.to_waveform(style_audio_file)
+        return speech_waveform, style_waveform
     
 class Wave_Block(nn.Module):
     def __init__(self, in_channels, out_channels, dilation_rates, kernel_size):
