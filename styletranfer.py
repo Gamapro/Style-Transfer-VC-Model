@@ -56,7 +56,7 @@ class ContentLoss(nn.Module):
         self.loss = F.mse_loss(input, self.target)
         return input
     
-def gram_matrix(input):
+def Gram_matrix(input):
     a, b, c, d = input.size()  # a=batch size(=1)
     # b=number of feature maps
     # (c,d)=dimensions of a f. map (N=c*d)
@@ -73,10 +73,10 @@ class StyleLoss(nn.Module):
 
     def __init__(self, target_feature):
         super(StyleLoss, self).__init__()
-        self.target = gram_matrix(target_feature).detach()
+        self.target = Gram_matrix(target_feature).detach()
 
     def forward(self, input):
-        G = gram_matrix(input)
+        G = Gram_matrix(input)
         self.loss = F.mse_loss(G, self.target)
         return input
 
