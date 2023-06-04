@@ -3,6 +3,7 @@ import torch
 import torch.optim
 from torch.utils.data import Dataset
 from torch import nn
+import torch.nn.functional as F
 
 class AudioDataset(Dataset):
 
