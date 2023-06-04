@@ -16,7 +16,7 @@ class AudioDataset(Dataset):
         return len(self.metadata)
 
     def to_waveform(self, audio_file):
-        waveform, _ = torchaudio.load(audio_file)
+        waveform, _ = torchaudio.load(audio_file, normalize=True)
         waveform = waveform[0, :self.sample_rate * self.audio_length]
         waveform = waveform / torch.max(torch.abs(waveform))
         waveform = waveform.to(self.device)
@@ -30,6 +30,36 @@ class AudioDataset(Dataset):
         style_waveform = self.to_waveform(style_audio_file)
         return speech_waveform, style_waveform
     
+class AudioMELSpectogramDataset(Dataset):
+
+    def __init__(self, metadata, device, sample_rate=32000, audio_length=1, n_fft=800):
+        self.metadata = metadata
+        self.sample_rate = sample_rate
+        self.audio_length = audio_length
+        self.device = device
+        self.transform = torchaudio.transforms.MelSpectrogram(sample_rate=sample_rate)
+        # self.transform = torchaudio.transforms.Spectrogram(n_fft=n_fft)
+
+    def __len__(self):
+        return len(self.metadata)
+
+    def to_waveform(self, audio_file):
+        waveform, _ = torchaudio.load(audio_file, normalize=True)
+        waveform = waveform[0, :self.sample_rate * self.audio_length]
+        waveform = waveform / torch.max(torch.abs(waveform))
+        # waveform = waveform.to(self.device)
+        return waveform
+
+    def __getitem__(self, idx):
+        audio_file = self.metadata.iloc[idx]['path']
+        speech_waveform = self.to_waveform(audio_file)
+        speech_spectrogram = self.transform(speech_waveform)
+        random_idx = torch.randint(0, len(self.metadata), (1,)).item()
+        style_audio_file = self.metadata.iloc[random_idx]['path']
+        style_waveform = self.to_waveform(style_audio_file)
+        style_spectrogram = self.transform(style_waveform)
+        return speech_spectrogram, style_spectrogram # , speech_waveform, style_waveform
+
 class Wave_Block(nn.Module):
     def __init__(self, in_channels, out_channels, dilation_rates, kernel_size):
         super(Wave_Block, self).__init__()
