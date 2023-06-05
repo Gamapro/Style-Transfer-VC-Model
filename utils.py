@@ -104,4 +104,38 @@ class WaveNet(nn.Module):
         x = self.dropout(x)
         return x
     
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
+cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
+
+# create a module to normalize input image so we can easily put it in a
+# ``nn.Sequential``
+class Normalization(nn.Module):
+    def __init__(self, mean, std):
+        super(Normalization, self).__init__()
+        # .view the mean and std to make them [C x 1 x 1] so that they can
+        # directly work with image Tensor of shape [B x C x H x W].
+        # B is batch size. C is number of channels. H is height and W is width.
+        self.mean = torch.tensor(mean).view(-1, 1, 1)
+        self.std = torch.tensor(std).view(-1, 1, 1)
+
+    def forward(self, img):
+        # normalize ``img``
+        return (img - self.mean) / self.std
+
+def CalcContentLoss(gen_feat,orig_feat):
+    #calculating the content loss of each layer by calculating the MSE between the content and generated features and adding it to content loss
+    content_l=torch.mean((gen_feat-orig_feat)**2)
+    return content_l
+
+def CalcStyleLoss(gen,style):
+    #Calculating the gram matrix for the style and the generated image
+    channel,height,width=gen.shape
+    G = torch.mm(gen.view(channel,height*width),gen.view(channel,height*width).t())
+    # print('G', G.max(), G.min())
+    A = torch.mm(style.view(channel,height*width),style.view(channel,height*width).t())
+    # print('A', A.max(), A.min())     
+    #Calcultating the style loss of each layer by calculating the MSE between the gram matrix of the style image and the generated image and adding it to style loss
+    style_l=torch.mean((G-A)**2)
+    return style_l
