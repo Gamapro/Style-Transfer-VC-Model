@@ -59,6 +59,8 @@ class AudioMELSpectogramDataset(Dataset):
         style_audio_file = self.metadata.iloc[random_idx]['path']
         style_waveform = self.to_waveform(style_audio_file)
         style_spectrogram = self.transform(style_waveform)
+        speech_spectrogram = speech_spectrogram.type(torch.float64)
+        style_spectrogram = style_spectrogram.type(torch.float64)
         return speech_spectrogram, style_spectrogram # , speech_waveform, style_waveform
 
 class Wave_Block(nn.Module):
