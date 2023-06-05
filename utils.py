@@ -4,6 +4,9 @@ import torch.optim
 from torch.utils.data import Dataset
 from torch import nn
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import numpy as np
+from torchaudio import transforms
 
 class AudioDataset(Dataset):
 
@@ -139,3 +142,30 @@ def CalcStyleLoss(gen,style):
     #Calcultating the style loss of each layer by calculating the MSE between the gram matrix of the style image and the generated image and adding it to style loss
     style_l=torch.mean((G-A)**2)
     return style_l
+
+def plot_mel_spectrogram(mel_spectrogram, name='mel_spectrogram'):
+    plt.figure(figsize=(10, 4))
+    mel_spectrogram = np.log(mel_spectrogram)
+    plt.imshow(mel_spectrogram, origin='lower', aspect='auto') # , cmap='inferno')
+    plt.xticks([]), plt.yticks([])
+    #plt.xlabel('Frame'), plt.ylabel('Mel Bin')
+    # plt.title('Mel Spectrogram'), plt.colorbar(label='Magnitude (dB)')
+    plt.tight_layout()
+    plt.savefig(f'{name}.png')
+    plt.show()
+
+def mel_to_wav(mel_spectrogram):
+    sample_rate = 16000  # Frecuencia de muestreo del audio original
+    n_fft = 256  # Número de puntos de la STFT
+    hop_length = 128 # Tamaño del salto entre ventanas
+    n_mels = 128  # Número de bandas de frecuencia en el espectrograma de Mel
+    # Crear una instancia de la transformación inversa de escala Mel
+    inverse_mel_scale = transforms.InverseMelScale(n_stft=(n_fft // 2) + 1, n_mels=n_mels).to(device)
+    # Convertir el espectrograma de Mel a un espectrograma lineal
+    mel_spectrogram = mel_spectrogram.float()
+    linear_spectrogram = inverse_mel_scale(mel_spectrogram)
+    # Restaurar el espectrograma lineal a su escala original (opcional)
+    linear_spectrogram = linear_spectrogram * linear_spectrogram.max()
+    griffin_lim_transform = transforms.GriffinLim(n_fft=n_fft, hop_length=hop_length).to(device)
+    waveform = griffin_lim_transform(linear_spectrogram)
+    return waveform.cpu().numpy()
