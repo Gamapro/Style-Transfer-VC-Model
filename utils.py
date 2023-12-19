@@ -46,6 +46,13 @@ class AudioMELSpectogramDataset(Dataset):
 
     def __len__(self):
         return len(self.metadata)
+    
+    def pad_spectrogram(self, spectrogram):
+        num_frames = spectrogram.shape[2]
+        if num_frames < self.max_length:
+            padding = self.max_length - num_frames
+            spectrogram = F.pad(spectrogram, (0, padding))
+        return spectrogram
 
     def to_waveform(self, audio_file):
         waveform, _ = torchaudio.load(audio_file, normalize=True)
@@ -143,7 +150,9 @@ def CalcStyleLoss(gen,style):
     style_l=torch.mean((G-A)**2)
     return style_l
 
-def plot_mel_spectrogram(mel_spectrogram, name='mel_spectrogram'):
+def plot_mel_spectrogram(mel_spectrogram, path='melspec.png', save=False):
+    if mel_spectrogram.ndim == 3:
+        mel_spectrogram = mel_spectrogram.squeeze(0)
     plt.figure(figsize=(10, 4))
     mel_spectrogram = np.log(mel_spectrogram)
     plt.imshow(mel_spectrogram, origin='lower', aspect='auto') # , cmap='inferno')
@@ -151,7 +160,8 @@ def plot_mel_spectrogram(mel_spectrogram, name='mel_spectrogram'):
     #plt.xlabel('Frame'), plt.ylabel('Mel Bin')
     # plt.title('Mel Spectrogram'), plt.colorbar(label='Magnitude (dB)')
     plt.tight_layout()
-    plt.savefig(f'{name}.png')
+    if save:
+        plt.savefig(f'{path}', bbox_inches='tight', pad_inches=0, transparent=True)
     plt.show()
 
 def mel_to_wav(mel_spectrogram):
